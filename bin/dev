@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Boots the reference topology (nats + turbocable-server) and blocks until
+# the gateway's /health endpoint returns 200. Stub only in Phase 0 — scripts
+# that depend on this live endpoint land in Phase 1.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+COMPOSE_ARGS=()
+FROM_SOURCE=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --server-from-source)
+      FROM_SOURCE=1
+      ;;
+    *)
+      COMPOSE_ARGS+=("$arg")
+      ;;
+  esac
+done
+
+if [[ "$FROM_SOURCE" -eq 1 ]]; then
+  echo "--server-from-source not yet wired up (Phase 1). Falling back to compose image." >&2
+fi
+
+echo "→ Booting nats + turbocable-server via docker compose…"
+docker compose up -d "${COMPOSE_ARGS[@]}"
+
+HEALTH_URL="http://127.0.0.1:9292/health"
+echo "→ Waiting on $HEALTH_URL"
+
+deadline=$(( $(date +%s) + 60 ))
+while (( $(date +%s) < deadline )); do
+  if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+    echo "✔ turbocable-server is healthy."
+    curl -fsS "$HEALTH_URL" || true
+    echo
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "✖ turbocable-server did not become healthy within 60s." >&2
+docker compose logs --tail 100 turbocable-server >&2 || true
+exit 1

@@ -1,0 +1,13 @@
+/.bundle/
+/vendor/bundle
+/tmp/
+/pkg/
+/coverage/
+/doc/
+/.yardoc/
+*.gem
+*.rbc
+.DS_Store
+.env
+.env.*
+!.env.example

@@ -216,26 +216,46 @@ Any change here requires a matching change in the server:
 | Concern | Contract |
 |---------|----------|
 | Stream subject | `TURBOCABLE.<stream_name>` — `extract_stream_name` in `src/pubsub/nats.rs` strips the `TURBOCABLE.` prefix |
-| Payload | Raw bytes; the server tries JSON first, then MessagePack, then null |
+| JetStream stream | Created by the server (`get_or_create_stream`) with `TURBOCABLE.>`, file storage, 7-day `max_age`, configurable replicas. Gem must not touch it. |
+| Payload | Raw bytes; the server tries JSON first, then MessagePack, then null. NATS `MaxMsgSize` (1 MB default) is the effective ceiling. |
 | Stream name charset | Must be a valid NATS subject token — no `.`, `*`, `>`, whitespace |
-| KV bucket | `TC_PUBKEYS`, key `rails_public_key`, PEM-encoded RSA public key |
-| JWT claims | `sub`, `exp`, `iat`, `allowed_streams` (array of glob patterns) |
+| KV bucket | `TC_PUBKEYS`, key `rails_public_key`, PEM-encoded RSA public key. Server watches but does not create; gem is responsible for bucket lifecycle. Server's `TURBOCABLE_JWT_PUBLIC_KEY_PATH` shadows the KV entry when set. |
+| JWT claims | Required: `sub`, `exp`, `iat`, `allowed_streams` (array). Not verified: `iss`, `aud`, `kid`. Clock leeway effectively zero. |
+| `allowed_streams` grammar | Exact name, `prefix_*`, or `*` — nothing else is honored. |
 | Signing algo | RS256 only — other algorithms are rejected by the gateway |
+| NATS auth | The gem must match whatever auth mode (`no-auth`, token, user/pass, creds file, TLS, mTLS) the server operator enabled on `nats-server`. The server itself passes through via `TURBOCABLE_NATS_URL` and peer TLS/creds env vars. |
+| Rate limiting | Server's `TURBOCABLE_STREAM_RATE_LIMIT_RPS` may drop messages after successful NATS ack. A successful `broadcast` is not a delivery guarantee. |
+| Liveness | `GET http://server:9292/health`, `/metrics`, `/pubkey` all unauthenticated on the WebSocket port. |
 
 ## 8. Testing strategy
+
+The reference topology for every integration-level test is **`turbocable-server`
+running against `nats-server --jetstream`**. The gem publishes into NATS; the
+server fans out over WebSocket. Tests that only talk to NATS miss the half of
+the contract that matters to end users.
 
 1. **Unit tests** — codec round-trips, configuration validation, stream-name
    regex, JWT minting with a fixed private key and golden tokens, retry
    backoff logic using an injectable clock.
 2. **Adapter tests** — the `NullAdapter` records publishes in-memory so
    dependent gems (including `turbocable-rails`) can assert on broadcasts
-   without a live NATS.
-3. **Integration tests (CI-only)** — spin up `nats-server --jetstream` in a
-   Docker service, run end-to-end publish tests that assert on stream info
-   and message contents via `nats-pure`.
-4. **Server round-trip test (optional)** — a nightly job boots
-   `turbocable-server` + `nats-server`, publishes from the gem, and asserts
-   over a WebSocket client that the message is fanned out correctly.
+   without a live NATS or server.
+3. **Integration tests (CI)** — spin up the full stack as Docker Compose
+   services: `nats:2.10 --jetstream`, `ghcr.io/turbocable/server:latest`, and
+   the Ruby test runner. Each spec:
+   - Mints a JWT via `Turbocable::Auth.issue_token`.
+   - Publishes the public key via `Turbocable::Auth.publish_public_key!`.
+   - Opens a WebSocket to `ws://turbocable-server:9292/cable` with the token.
+   - Calls `Turbocable.broadcast(stream, payload)`.
+   - Asserts the payload is received over the WebSocket with the expected
+     codec framing.
+4. **Server health gate** — every integration spec waits on
+   `GET http://turbocable-server:9292/health` returning `200` before
+   publishing, so flakes from server boot races are visible as setup
+   failures rather than assertion failures.
+5. **Local dev parity** — a `bin/dev` script in the repo boots the same
+   `nats-server` + `turbocable-server` topology locally so authors run the
+   same stack CI does. See §12.
 
 ## 9. Distribution
 
@@ -257,7 +277,67 @@ Any change here requires a matching change in the server:
 | 4 — Null adapter | `NullAdapter`, documented for test doubles | `turbocable-rails` can run its entire test suite against it |
 | 5 — 1.0 | Docs, CHANGELOG, security notes, supported server version matrix | First `1.0.0` release on RubyGems |
 
-## 11. Resolved decisions
+## 11. Local development & reference topology
+
+Authors working on the gem — and the CI job that gates every PR — run against
+the same topology end users deploy: `nats-server` behind `turbocable-server`.
+The gem is never developed against bare NATS alone, because the only
+integration surface users care about is the WebSocket fan-out.
+
+### Reference topology
+
+```
+  +------------------+        +---------------------+        +---------------+
+  |  Ruby test /     |        |  turbocable-server  |        |  WS client    |
+  |  dev process     |        |  (Rust, port 9292)  |        |  in specs     |
+  |  (turbocable)    |        |                     |        |               |
+  +--------+---------+        +----------+----------+        +-------+-------+
+           |                             |                           ^
+           | JetStream publish           | JetStream consume         | WS frames
+           v                             v                           |
+           +-----------------------------+---------------------------+
+                                   NATS 2.10+
+                               (stream TURBOCABLE,
+                                KV bucket TC_PUBKEYS)
+```
+
+### `bin/dev` script
+
+The repo ships a `bin/dev` script that:
+
+1. Verifies `nats-server --jetstream` is reachable on `nats://127.0.0.1:4222`,
+   starting it in the background if not.
+2. Pulls and runs `ghcr.io/turbocable/server:latest` with
+   `TURBOCABLE_NATS_URL=nats://host.docker.internal:4222` exposed on `:9292`.
+3. Blocks until `GET http://127.0.0.1:9292/health` returns `200`.
+4. Drops the author into an `irb` session with `turbocable` loaded and
+   configured, ready for interactive `Turbocable.broadcast` calls.
+
+### Docker Compose for CI and local parity
+
+A `docker-compose.yml` at the repo root starts:
+
+| Service | Image | Notes |
+|---------|-------|-------|
+| `nats` | `nats:2.10` | Started with `-js` |
+| `turbocable-server` | `ghcr.io/turbocable/server:latest` | Depends on `nats`, exposes `9292` |
+| `rspec` | Locally built Ruby image | Mounts the gem source, runs `bundle exec rspec` |
+
+CI invokes this compose file; local authors can run `docker compose up` to
+mirror CI exactly. This is the single source of truth for "does the gem work
+against the server?".
+
+### Running against a source build of the server
+
+When working on cross-cutting changes (e.g., a new JWT claim or codec quirk),
+authors can replace the `ghcr.io/turbocable/server:latest` service with a
+sibling checkout of `samaswin/turbocable-server` and `cargo run`. The
+[server README](https://github.com/samaswin/turbocable-server) documents the
+exact steps (`asdf install`, `nats-server --jetstream &`, `cargo build`,
+`RUST_LOG=info cargo run`). The gem's `bin/dev --server-from-source` flag
+automates the handoff.
+
+## 12. Resolved decisions
 
 | Question | Decision |
 |----------|----------|

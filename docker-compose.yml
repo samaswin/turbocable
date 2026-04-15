@@ -1,0 +1,31 @@
+# Reference topology used by bin/dev and every integration spec from Phase 1
+# onward. Versions here are the contract: phase specs run against these pins,
+# so bumping them is a deliberate PR, not a casual update.
+services:
+  nats:
+    image: nats:2.10
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  turbocable-server:
+    image: ghcr.io/turbocable/server:latest
+    depends_on:
+      nats:
+        condition: service_healthy
+    environment:
+      TURBOCABLE_NATS_URL: nats://nats:4222
+      RUST_LOG: info
+    ports:
+      - "9292:9292"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
