@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "msgpack"
+# Trigger the lazy-load so the constant is defined before the describe block
+Turbocable::Codecs.fetch(:msgpack)
 
 RSpec.describe Turbocable::Codecs::MsgPack do
   before { described_class.reset_factory! }
@@ -109,7 +111,17 @@ RSpec.describe Turbocable::Codecs::MsgPack do
     it "produces bytes decodable when symbols are present (ext type is valid msgpack)" do
       payload = {channel: "chat_room_42", text: "hi"}
       encoded = described_class.encode(payload)
-      expect { ::MessagePack.unpack(encoded) }.not_to raise_error
+      # The server (rmp_serde) treats ext types as opaque values — it does not raise.
+      # The Ruby default factory raises on unknown ext types, so we use a factory
+      # that tolerates them, mirroring rmp_serde's behaviour.
+      lenient_factory = ::MessagePack::Factory.new
+      lenient_factory.register_type(described_class::EXT_TYPE_SYMBOL, Object,
+        packer: nil,
+        unpacker: ->(bytes) { bytes })
+      lenient_factory.register_type(described_class::EXT_TYPE_TIME, Object,
+        packer: nil,
+        unpacker: ->(bytes) { bytes })
+      expect { lenient_factory.unpack(encoded) }.not_to raise_error
     end
   end
 

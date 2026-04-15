@@ -26,7 +26,7 @@ rescue LoadError
   WS_CLIENT_AVAILABLE = false
 end
 
-INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true"
+INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
 
 RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
   NATS_URL_AUTH          = ENV.fetch("TURBOCABLE_NATS_URL",         "nats://localhost:4222")

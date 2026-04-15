@@ -16,7 +16,7 @@ require "net/http"
 require "uri"
 require "nats/client"
 
-INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true"
+INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
 
 RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
   # -------------------------------------------------------------------------

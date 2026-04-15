@@ -127,7 +127,6 @@ RSpec.describe Turbocable::Client do
     end
 
     it "allows payloads exactly at the limit" do
-      bytes = described_class::STREAM_NAME_PATTERN  # just to get a constant reference
       payload = {m: "x"}
       encoded = Turbocable::Codecs::JSON.encode(payload)
       config.max_payload_bytes = encoded.bytesize

@@ -50,7 +50,7 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # no-auth: default compose service, no credentials required
   # -------------------------------------------------------------------------
-  context "no-auth mode", if: AUTH_MODE == "no-auth" do
+  context "no-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "no-auth" do
     before do
       Turbocable.configure do |c|
         c.nats_url        = NATS_URL_BASE
@@ -78,7 +78,7 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # token-auth: nats-server configured with authorization.token
   # -------------------------------------------------------------------------
-  context "token-auth mode", if: AUTH_MODE == "token-auth" do
+  context "token-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "token-auth" do
     context "with correct token" do
       before do
         Turbocable.configure do |c|
@@ -124,7 +124,7 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # user-pass: nats-server configured with authorization.users
   # -------------------------------------------------------------------------
-  context "user-pass mode", if: AUTH_MODE == "user-pass" do
+  context "user-pass mode", if: INTEGRATION_ENABLED && AUTH_MODE == "user-pass" do
     context "with correct credentials" do
       before do
         Turbocable.configure do |c|
@@ -159,7 +159,7 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # mtls: nats-server configured with tls.verify
   # -------------------------------------------------------------------------
-  context "mtls mode", if: AUTH_MODE == "mtls" do
+  context "mtls mode", if: INTEGRATION_ENABLED && AUTH_MODE == "mtls" do
     let(:ca_available?)   { File.exist?(NATS_TLS_CA_PATH) }
     let(:cert_available?) { File.exist?(NATS_TLS_CERT_PATH) }
     let(:key_available?)  { File.exist?(NATS_TLS_KEY_PATH) }

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "logger"
+
 module Turbocable
   # Holds all configuration for the Turbocable gem. Set via
   # +Turbocable.configure { |c| … }+.
@@ -194,6 +196,24 @@ module Turbocable
 
     def nats_tls_key_file
       @nats_tls_key_file ||= ENV["TURBOCABLE_NATS_KEY_PATH"]
+    end
+
+    # -------------------------------------------------------------------------
+    # Adapter selection
+    # -------------------------------------------------------------------------
+
+    # @!attribute [rw] adapter
+    #   Selects the publish adapter. Accepted values:
+    #   * +:nats+ (default) — publishes to a live NATS JetStream connection.
+    #   * +:null+ — records broadcasts in memory without touching NATS.
+    #     Intended for test suites; see +Turbocable::NullAdapter+.
+    #
+    #   Read from env +TURBOCABLE_ADAPTER+ (+"nats"+ or +"null"+).
+    # @return [Symbol]
+    attr_writer :adapter
+
+    def adapter
+      @adapter ||= (ENV["TURBOCABLE_ADAPTER"]&.to_sym || :nats)
     end
 
     # -------------------------------------------------------------------------

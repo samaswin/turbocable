@@ -45,13 +45,36 @@ module Turbocable
     JITTER_FACTOR  = 0.20  # ±20%
 
     # @param config [Turbocable::Configuration]
-    # @param connection [Turbocable::NatsConnection, nil] injectable for tests
+    # @param connection [Turbocable::NatsConnection, Turbocable::NullAdapter, nil]
+    #   injectable for tests; when +nil+, resolved from +config.adapter+
     # @param clock [#call, nil] callable invoked with a duration in seconds
     #   instead of +Kernel.sleep+; injectable for deterministic backoff specs
     def initialize(config, connection: nil, clock: nil)
       @config     = config
       @connection = connection
       @clock      = clock
+    end
+
+    # Returns +true+ if the underlying adapter is reachable, +false+ otherwise.
+    #
+    # For the +:nats+ adapter this issues a NATS +flush+ (PING/PONG round-trip)
+    # and, if the stream name is known, fetches JetStream stream info to confirm
+    # JetStream connectivity. For the +:null+ adapter this always returns +true+.
+    #
+    # The method *never raises* on network errors — callers that need strict
+    # semantics should use +Turbocable.healthcheck!+ instead.
+    #
+    # @return [Boolean]
+    # @raise [ConfigurationError] if the configuration is invalid
+    def healthy?
+      connection.ping(timeout: @config.publish_timeout)
+    rescue ConfigurationError
+      raise
+    rescue => e
+      @config.logger.warn do
+        "[Turbocable] Health check failed: #{e.class} — #{e.message}"
+      end
+      false
     end
 
     # Publishes +payload+ to the +stream_name+ subject.
@@ -178,7 +201,12 @@ module Turbocable
     # -------------------------------------------------------------------------
 
     def connection
-      @connection ||= NatsConnection.new(@config)
+      @connection ||= case @config.adapter
+      when :null
+        NullAdapter.new
+      else
+        NatsConnection.new(@config)
+      end
     end
   end
 end

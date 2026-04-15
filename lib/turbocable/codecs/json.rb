@@ -20,12 +20,27 @@ module Turbocable
         "actioncable-v1-json"
       end
 
+      # JSON-serializable primitive types. Values whose class is not one of
+      # these (or a subclass) are rejected before +JSON.generate+ is called,
+      # because newer versions of the +json+ gem silently call +#to_s+ on
+      # unknown types rather than raising.
+      PRIMITIVE_TYPES = [Hash, Array, String, Integer, Float, TrueClass, FalseClass, NilClass, Symbol].freeze
+      private_constant :PRIMITIVE_TYPES
+
       # Serializes +payload+ to a JSON string (encoded as UTF-8 bytes).
       #
       # @param payload [Object] any JSON-serializable value (Hash, Array, etc.)
       # @return [String] UTF-8-encoded JSON bytes
       # @raise [Turbocable::SerializationError] if the payload cannot be serialized
       def self.encode(payload)
+        unless PRIMITIVE_TYPES.any? { |t| payload.is_a?(t) }
+          raise Turbocable::SerializationError.new(
+            "JSON codec cannot encode #{payload.class}: not a JSON-serializable type. " \
+            "Use a Hash, Array, String, Numeric, Boolean, or nil.",
+            codec_name: :json,
+            payload_class: payload.class
+          )
+        end
         ::JSON.generate(payload)
       rescue ::JSON::GeneratorError, ::TypeError => e
         raise Turbocable::SerializationError.new(

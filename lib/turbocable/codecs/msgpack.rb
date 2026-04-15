@@ -58,7 +58,7 @@ module Turbocable
       def self.encode(payload)
         require_msgpack!
         factory.pack(payload)
-      rescue ::TypeError => e
+      rescue ::TypeError, ::NoMethodError => e
         raise Turbocable::SerializationError.new(
           "MsgPack codec failed to encode #{payload.class}: #{e.message}",
           codec_name: :msgpack,

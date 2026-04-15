@@ -4,6 +4,7 @@ require_relative "turbocable/version"
 require_relative "turbocable/errors"
 require_relative "turbocable/configuration"
 require_relative "turbocable/codecs"
+require_relative "turbocable/null_adapter"
 require_relative "turbocable/nats_connection"
 require_relative "turbocable/client"
 require_relative "turbocable/auth"
@@ -49,14 +50,24 @@ module Turbocable
     # Resets the configuration and the client singleton. Intended for use in
     # test suites between examples.
     #
+    # Only closes the underlying connection when it is a known real adapter
+    # (+NatsConnection+ or +NullAdapter+). This avoids triggering RSpec mock
+    # verification failures when the connection has been replaced with an
+    # +instance_double+ in a test.
+    #
     # @api private
     def reset!
       @config_mutex ||= Mutex.new
-      @config_mutex.synchronize do
-        @client&.send(:connection).close rescue nil
-        @config = nil
+      @client_mutex ||= Mutex.new
+      @client_mutex.synchronize do
+        conn = @client&.send(:connection) rescue nil
+        if conn.is_a?(NatsConnection) || conn.is_a?(NullAdapter)
+          conn.close rescue nil
+        end
         @client = nil
       end
+      @config_mutex.synchronize { @config = nil }
+      NullAdapter.reset!
     end
 
     # Publishes +payload+ to the stream identified by +stream_name+.
@@ -78,10 +89,54 @@ module Turbocable
 
     # Returns the process-wide +Client+ singleton. Created lazily on first call.
     #
+    # Uses a dedicated mutex separate from the config mutex so that
+    # +Client.new(config)+ can call +config+ internally without deadlocking.
+    #
     # @return [Turbocable::Client]
     def client
-      @config_mutex ||= Mutex.new
-      @config_mutex.synchronize { @client ||= Client.new(config) }
+      @client_mutex ||= Mutex.new
+      @client_mutex.synchronize { @client ||= Client.new(config) }
+    end
+
+    # Checks whether the publisher can reach NATS.
+    #
+    # For the +:nats+ adapter this issues a NATS +flush+ (PING/PONG round-trip)
+    # within +config.publish_timeout+ seconds. For the +:null+ adapter it always
+    # returns +true+.
+    #
+    # == What this probe does and does not check
+    #
+    # A +true+ result means the *publisher process* can reach the *NATS server*.
+    # It does **not** confirm that +turbocable-server+ (the gateway) is running
+    # or that messages are being fanned out to WebSocket clients. To check
+    # gateway liveness, hit its HTTP endpoint directly:
+    #
+    #   curl http://turbocable-server:9292/health
+    #
+    # For a stricter check that raises on failure see +healthcheck!+.
+    #
+    # @return [Boolean] +true+ if NATS is reachable, +false+ otherwise
+    # @raise [ConfigurationError] if configuration is invalid
+    def healthy?
+      client.healthy?
+    end
+
+    # Like +healthy?+ but raises on failure instead of returning +false+.
+    #
+    # Useful for Kubernetes +startupProbe+ handlers or other contexts where
+    # an exception is easier to handle than a boolean.
+    #
+    # @return [true]
+    # @raise [HealthCheckError] if NATS is unreachable
+    # @raise [ConfigurationError] if configuration is invalid
+    def healthcheck!
+      return true if healthy?
+
+      raise HealthCheckError.new(
+        "Turbocable health check failed: NATS is unreachable at " \
+        "#{config.nats_url} within #{config.publish_timeout}s. " \
+        "Verify the NATS server is running and the publisher is correctly configured."
+      )
     end
   end
 end

@@ -66,6 +66,20 @@ module Turbocable
   # illegal +allowed_streams+ patterns, or accidental private-key exposure.
   class AuthError < Error; end
 
+  # Raised by +Turbocable.healthcheck!+ when the NATS connection or JetStream
+  # stream is unreachable. Carries the underlying cause for diagnosis.
+  class HealthCheckError < Error
+    # @return [Exception, nil]
+    attr_reader :cause
+
+    # @param message [String]
+    # @param cause [Exception, nil]
+    def initialize(message, cause: nil)
+      super(message)
+      @cause = cause
+    end
+  end
+
   # Raised when the encoded payload exceeds +config.max_payload_bytes+. The
   # limit is checked client-side before touching NATS so callers get a useful
   # error rather than a cryptic NATS-level rejection.
