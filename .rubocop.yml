@@ -14,7 +14,7 @@ AllCops:
     - "bin/**/*"
 
 RSpec/ExampleLength:
-  Max: 15
+  Max: 20
 
 RSpec/MultipleExpectations:
   Max: 5

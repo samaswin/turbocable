@@ -28,7 +28,7 @@ RSpec.configure do |config|
   Kernel.srand config.seed
 
   # Reset global Turbocable state between examples that modify it
-  config.after(:each) do
+  config.after do
     Turbocable.reset! if Turbocable.instance_variable_defined?(:@config)
   end
 end

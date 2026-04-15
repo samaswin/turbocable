@@ -14,16 +14,17 @@ require "uri"
 require "nats/client"
 require "tmpdir"
 
-INTEGRATION_ENABLED    = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
-AUTH_MODE              = ENV.fetch("AUTH_MODE", "no-auth")
-NATS_URL_BASE          = ENV.fetch("TURBOCABLE_NATS_URL", "nats://localhost:4222")
-NATS_TOKEN_VALUE       = ENV.fetch("NATS_TEST_TOKEN",    "test-token-changeme")
-NATS_TEST_USER         = ENV.fetch("NATS_TEST_USER",     "testuser")
-NATS_TEST_PASSWORD     = ENV.fetch("NATS_TEST_PASSWORD", "testpassword")
-NATS_TLS_CA_PATH       = ENV.fetch("NATS_TLS_CA_PATH",   "")
-NATS_TLS_CERT_PATH     = ENV.fetch("NATS_TLS_CERT_PATH", "")
-NATS_TLS_KEY_PATH      = ENV.fetch("NATS_TLS_KEY_PATH",  "")
-NATS_CREDS_FIXTURE     = File.expand_path("../fixtures/nats/test.creds", __dir__)
+# rubocop:disable RSpec/DescribeClass, RSpec/MultipleDescribes
+INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
+AUTH_MODE = ENV.fetch("AUTH_MODE", "no-auth")
+NATS_URL_BASE = ENV.fetch("TURBOCABLE_NATS_URL", "nats://localhost:4222")
+NATS_TOKEN_VALUE = ENV.fetch("NATS_TEST_TOKEN", "test-token-changeme")
+NATS_TEST_USER = ENV.fetch("NATS_TEST_USER", "testuser")
+NATS_TEST_PASSWORD = ENV.fetch("NATS_TEST_PASSWORD", "testpassword")
+NATS_TLS_CA_PATH = ENV.fetch("NATS_TLS_CA_PATH", "")
+NATS_TLS_CERT_PATH = ENV.fetch("NATS_TLS_CERT_PATH", "")
+NATS_TLS_KEY_PATH = ENV.fetch("NATS_TLS_KEY_PATH", "")
+NATS_CREDS_FIXTURE = File.expand_path("../fixtures/nats/test.creds", __dir__)
 
 RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED do
   around do |example|
@@ -50,17 +51,17 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # no-auth: default compose service, no credentials required
   # -------------------------------------------------------------------------
-  context "no-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "no-auth" do
+  context "when in no-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "no-auth" do
     before do
       Turbocable.configure do |c|
-        c.nats_url        = NATS_URL_BASE
+        c.nats_url = NATS_URL_BASE
         c.publish_timeout = 5.0
-        c.max_retries     = 0
-        c.logger          = Logger.new(File::NULL)
+        c.max_retries = 0
+        c.logger = Logger.new(File::NULL)
       end
     end
 
-    include_examples "successful publish"
+    it_behaves_like "successful publish"
 
     context "when wrong credentials are supplied anyway" do
       before do
@@ -78,123 +79,123 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
   # -------------------------------------------------------------------------
   # token-auth: nats-server configured with authorization.token
   # -------------------------------------------------------------------------
-  context "token-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "token-auth" do
+  context "when in token-auth mode", if: INTEGRATION_ENABLED && AUTH_MODE == "token-auth" do
     context "with correct token" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
-          c.nats_token      = NATS_TOKEN_VALUE
+          c.nats_url = NATS_URL_BASE
+          c.nats_token = NATS_TOKEN_VALUE
           c.publish_timeout = 5.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "successful publish"
+      it_behaves_like "successful publish"
     end
 
     context "with wrong token" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
-          c.nats_token      = "absolutely-wrong-token"
+          c.nats_url = NATS_URL_BASE
+          c.nats_token = "absolutely-wrong-token"
           c.publish_timeout = 2.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "rejected publish", "wrong token"
+      it_behaves_like "rejected publish", "wrong token"
     end
 
     context "with no token" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
+          c.nats_url = NATS_URL_BASE
           c.publish_timeout = 2.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "rejected publish", "missing token"
+      it_behaves_like "rejected publish", "missing token"
     end
   end
 
   # -------------------------------------------------------------------------
   # user-pass: nats-server configured with authorization.users
   # -------------------------------------------------------------------------
-  context "user-pass mode", if: INTEGRATION_ENABLED && AUTH_MODE == "user-pass" do
+  context "when in user-pass mode", if: INTEGRATION_ENABLED && AUTH_MODE == "user-pass" do
     context "with correct credentials" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
-          c.nats_user       = NATS_TEST_USER
-          c.nats_password   = NATS_TEST_PASSWORD
+          c.nats_url = NATS_URL_BASE
+          c.nats_user = NATS_TEST_USER
+          c.nats_password = NATS_TEST_PASSWORD
           c.publish_timeout = 5.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "successful publish"
+      it_behaves_like "successful publish"
     end
 
     context "with wrong password" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
-          c.nats_user       = NATS_TEST_USER
-          c.nats_password   = "wrong-password"
+          c.nats_url = NATS_URL_BASE
+          c.nats_user = NATS_TEST_USER
+          c.nats_password = "wrong-password"
           c.publish_timeout = 2.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "rejected publish", "wrong password"
+      it_behaves_like "rejected publish", "wrong password"
     end
   end
 
   # -------------------------------------------------------------------------
   # mtls: nats-server configured with tls.verify
   # -------------------------------------------------------------------------
-  context "mtls mode", if: INTEGRATION_ENABLED && AUTH_MODE == "mtls" do
-    let(:ca_available?)   { File.exist?(NATS_TLS_CA_PATH) }
+  context "when in mtls mode", if: INTEGRATION_ENABLED && AUTH_MODE == "mtls" do
+    let(:ca_available?) { File.exist?(NATS_TLS_CA_PATH) }
     let(:cert_available?) { File.exist?(NATS_TLS_CERT_PATH) }
-    let(:key_available?)  { File.exist?(NATS_TLS_KEY_PATH) }
+    let(:key_available?) { File.exist?(NATS_TLS_KEY_PATH) }
 
     context "with valid client certificate" do
       before do
         skip "mTLS fixture files not found" unless ca_available? && cert_available? && key_available?
 
         Turbocable.configure do |c|
-          c.nats_url         = NATS_URL_BASE
-          c.nats_tls         = true
+          c.nats_url = NATS_URL_BASE
+          c.nats_tls = true
           c.nats_tls_ca_file = NATS_TLS_CA_PATH
           c.nats_tls_cert_file = NATS_TLS_CERT_PATH
-          c.nats_tls_key_file  = NATS_TLS_KEY_PATH
-          c.publish_timeout  = 5.0
-          c.max_retries      = 0
-          c.logger           = Logger.new(File::NULL)
+          c.nats_tls_key_file = NATS_TLS_KEY_PATH
+          c.publish_timeout = 5.0
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "successful publish"
+      it_behaves_like "successful publish"
     end
 
     context "with no client certificate" do
       before do
         Turbocable.configure do |c|
-          c.nats_url        = NATS_URL_BASE
-          c.nats_tls        = true
+          c.nats_url = NATS_URL_BASE
+          c.nats_tls = true
           c.publish_timeout = 2.0
-          c.max_retries     = 0
-          c.logger          = Logger.new(File::NULL)
+          c.max_retries = 0
+          c.logger = Logger.new(File::NULL)
         end
       end
 
-      include_examples "rejected publish", "no client cert against mTLS server"
+      it_behaves_like "rejected publish", "no client cert against mTLS server"
     end
   end
 
@@ -205,7 +206,7 @@ RSpec.describe "NATS auth integration (#{AUTH_MODE})", if: INTEGRATION_ENABLED d
     it "raises when creds_file and token are both set" do
       cfg = Turbocable::Configuration.new
       cfg.nats_creds_file = NATS_CREDS_FIXTURE
-      cfg.nats_token      = "also-a-token"
+      cfg.nats_token = "also-a-token"
       expect { cfg.validate! }.to raise_error(Turbocable::ConfigurationError, /mutually exclusive/)
     end
   end
@@ -214,3 +215,4 @@ end
 RSpec.describe "NATS auth integration", unless: INTEGRATION_ENABLED do
   it "skipped — set INTEGRATION=true and AUTH_MODE=<mode> to enable"
 end
+# rubocop:enable RSpec/DescribeClass, RSpec/MultipleDescribes

@@ -65,7 +65,7 @@ module Turbocable
     attr_writer :default_codec
 
     def default_codec
-      @default_codec ||= (ENV["TURBOCABLE_DEFAULT_CODEC"]&.to_sym || :json)
+      @default_codec ||= ENV["TURBOCABLE_DEFAULT_CODEC"]&.to_sym || :json
     end
 
     # @!attribute [rw] publish_timeout
@@ -213,7 +213,7 @@ module Turbocable
     attr_writer :adapter
 
     def adapter
-      @adapter ||= (ENV["TURBOCABLE_ADAPTER"]&.to_sym || :nats)
+      @adapter ||= ENV["TURBOCABLE_ADAPTER"]&.to_sym || :nats
     end
 
     # -------------------------------------------------------------------------
@@ -297,8 +297,8 @@ module Turbocable
 
     def validate_auth_mutual_exclusion!
       creds_active = !nats_creds_file.nil? && !nats_creds_file.empty?
-      user_active  = (!nats_user.nil? && !nats_user.empty?) ||
-                     (!nats_password.nil? && !nats_password.empty?)
+      user_active = (!nats_user.nil? && !nats_user.empty?) ||
+        (!nats_password.nil? && !nats_password.empty?)
       token_active = !nats_token.nil? && !nats_token.empty?
 
       if creds_active && (user_active || token_active)

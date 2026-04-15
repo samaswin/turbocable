@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/MultipleDescribes
 RSpec.describe Turbocable::Codecs do
   describe ".fetch" do
     it "returns the JSON codec for :json" do
@@ -74,17 +75,18 @@ RSpec.describe Turbocable::Codecs::JSON do
   describe ".decode" do
     it "round-trips a Hash" do
       original = {"text" => "hello", "count" => 3}
-      encoded  = described_class.encode(original)
-      decoded  = described_class.decode(encoded)
+      encoded = described_class.encode(original)
+      decoded = described_class.decode(encoded)
       expect(decoded).to eq(original)
     end
 
     it "round-trips an Array" do
       original = [1, "two", {three: 3}]
-      encoded  = described_class.encode(original)
-      decoded  = described_class.decode(encoded)
+      encoded = described_class.encode(original)
+      decoded = described_class.decode(encoded)
       # Symbol keys become strings through JSON
       expect(decoded).to eq([1, "two", {"three" => 3}])
     end
   end
 end
+# rubocop:enable RSpec/MultipleDescribes

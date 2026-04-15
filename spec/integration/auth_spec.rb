@@ -28,21 +28,22 @@ end
 
 INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
 
+AUTH_NATS_URL = ENV.fetch("TURBOCABLE_NATS_URL", "nats://localhost:4222")
+AUTH_SERVER_HEALTH_URL = ENV.fetch("TURBOCABLE_SERVER_HEALTH_URL", "http://localhost:9292/health")
+AUTH_SERVER_BASE_URL = AUTH_SERVER_HEALTH_URL.sub(%r{/health\z}, "")
+AUTH_SERVER_WS_URL = ENV.fetch("TURBOCABLE_SERVER_WS_URL", "ws://localhost:9292/cable")
+AUTH_HEALTH_TIMEOUT = Integer(ENV.fetch("HEALTH_TIMEOUT_SECS", "30"))
+
+# Generate a fresh RSA key pair per suite run — no need to pin keys in CI.
+AUTH_RSA_KEY = OpenSSL::PKey::RSA.generate(2048)
+AUTH_PRIVATE_PEM = AUTH_RSA_KEY.to_pem
+AUTH_PUBLIC_PEM = AUTH_RSA_KEY.public_key.to_pem
+
+# rubocop:disable RSpec/DescribeClass, RSpec/MultipleDescribes
 RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
-  NATS_URL_AUTH          = ENV.fetch("TURBOCABLE_NATS_URL",         "nats://localhost:4222")
-  SERVER_HEALTH_URL_AUTH = ENV.fetch("TURBOCABLE_SERVER_HEALTH_URL", "http://localhost:9292/health")
-  SERVER_BASE_URL        = SERVER_HEALTH_URL_AUTH.sub(%r{/health\z}, "")
-  SERVER_WS_URL          = ENV.fetch("TURBOCABLE_SERVER_WS_URL",    "ws://localhost:9292/cable")
-  HEALTH_TIMEOUT_AUTH    = Integer(ENV.fetch("HEALTH_TIMEOUT_SECS", "30"))
-
-  # Generate a fresh RSA key pair per suite run — no need to pin keys in CI.
-  RSA_KEY     = OpenSSL::PKey::RSA.generate(2048)
-  PRIVATE_PEM = RSA_KEY.to_pem
-  PUBLIC_PEM  = RSA_KEY.public_key.to_pem
-
   def wait_for_server_health!
-    deadline = Time.now + HEALTH_TIMEOUT_AUTH
-    uri      = URI(SERVER_HEALTH_URL_AUTH)
+    deadline = Time.now + AUTH_HEALTH_TIMEOUT
+    uri = URI(AUTH_SERVER_HEALTH_URL)
     loop do
       begin
         response = Net::HTTP.get_response(uri)
@@ -50,26 +51,26 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
       rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
         # not ready yet
       end
-      raise "turbocable-server did not become healthy within #{HEALTH_TIMEOUT_AUTH}s" if Time.now > deadline
+      raise "turbocable-server did not become healthy within #{AUTH_HEALTH_TIMEOUT}s" if Time.now > deadline
 
       sleep 1
     end
   end
 
-  before(:all) do
+  before(:all) do # rubocop:disable RSpec/BeforeAfterAll
     wait_for_server_health!
   end
 
   around do |example|
     Turbocable.reset!
     Turbocable.configure do |c|
-      c.nats_url        = NATS_URL_AUTH
-      c.jwt_private_key = PRIVATE_PEM
-      c.jwt_public_key  = PUBLIC_PEM
-      c.jwt_issuer      = "turbocable-integration-spec"
+      c.nats_url = AUTH_NATS_URL
+      c.jwt_private_key = AUTH_PRIVATE_PEM
+      c.jwt_public_key = AUTH_PUBLIC_PEM
+      c.jwt_issuer = "turbocable-integration-spec"
       c.publish_timeout = 5.0
-      c.max_retries     = 1
-      c.logger          = Logger.new(File::NULL)
+      c.max_retries = 1
+      c.logger = Logger.new(File::NULL)
     end
     example.run
     Turbocable.reset!
@@ -86,12 +87,12 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
 
       # Read back via raw nats-pure to confirm the bytes landed
       nc = NATS::IO::Client.new
-      nc.connect(NATS_URL_AUTH)
+      nc.connect(AUTH_NATS_URL)
       js = nc.jetstream
 
       kv = js.key_value("TC_PUBKEYS")
       entry = kv.get("rails_public_key")
-      expect(entry.value).to eq(OpenSSL::PKey::RSA.new(PUBLIC_PEM).public_key.to_pem)
+      expect(entry.value).to eq(OpenSSL::PKey::RSA.new(AUTH_PUBLIC_PEM).public_key.to_pem)
     ensure
       nc&.close
     end
@@ -108,7 +109,7 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
   # Full path: gem publishes → NATS JetStream → turbocable-server → WebSocket
   # =========================================================================
   describe "end-to-end WebSocket fan-out", if: WS_CLIENT_AVAILABLE do
-    it "delivers a broadcast to a connected subscriber within 2 seconds" do
+    it "delivers a broadcast to a connected subscriber within 2 seconds" do # rubocop:disable RSpec/ExampleLength
       # 1. Publish the public key so the gateway can verify tokens.
       Turbocable::Auth.publish_public_key!
 
@@ -116,25 +117,31 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
       sleep 0.5
 
       # 2. Mint a token permitting access to the test stream.
-      stream  = "e2e_test_#{SecureRandom.hex(4)}"
-      token   = Turbocable::Auth.issue_token(
-        sub:             "integration_spec_user",
+      stream = "e2e_test_#{SecureRandom.hex(4)}"
+      token = Turbocable::Auth.issue_token(
+        sub: "integration_spec_user",
         allowed_streams: [stream],
-        ttl:             120
+        ttl: 120
       )
 
       # 3. Open a WebSocket connection using the token.
       received_messages = []
-      ws_error          = nil
-      ws_opened         = false
+      ws_error = nil
+      ws_opened = false
 
       ws = WebSocket::Client::Simple.connect(
-        "#{SERVER_WS_URL}?token=#{token}"
+        "#{AUTH_SERVER_WS_URL}?token=#{token}"
       )
 
-      ws.on(:message) { |msg| received_messages << JSON.parse(msg.data) rescue nil }
-      ws.on(:error)   { |e|   ws_error = e }
-      ws.on(:open)    { ws_opened = true }
+      ws.on(:message) { |msg|
+        begin
+          received_messages << JSON.parse(msg.data)
+        rescue
+          nil
+        end
+      }
+      ws.on(:error) { |e| ws_error = e }
+      ws.on(:open) { ws_opened = true }
 
       # Wait for the connection to open
       deadline = Time.now + 5
@@ -158,7 +165,11 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
         "Expected to receive broadcast payload on WebSocket within 2s. " \
         "Got: #{received_messages.inspect}"
     ensure
-      ws&.close rescue nil
+      begin
+        ws&.close
+      rescue
+        nil
+      end
     end
   end
 
@@ -178,7 +189,7 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
       sleep 0.5
 
       # Mint a token with a *different* key — the server should reject it
-      wrong_key   = OpenSSL::PKey::RSA.generate(2048)
+      wrong_key = OpenSSL::PKey::RSA.generate(2048)
       wrong_token = JWT.encode(
         {sub: "bad_actor", allowed_streams: ["*"], iat: Time.now.to_i, exp: Time.now.to_i + 60},
         wrong_key,
@@ -186,7 +197,7 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
       )
 
       close_code = nil
-      ws = WebSocket::Client::Simple.connect("#{SERVER_WS_URL}?token=#{wrong_token}")
+      ws = WebSocket::Client::Simple.connect("#{AUTH_SERVER_WS_URL}?token=#{wrong_token}")
       ws.on(:close) { |e| close_code = e.code }
 
       deadline = Time.now + 5
@@ -195,7 +206,11 @@ RSpec.describe "Auth integration", if: INTEGRATION_ENABLED do
       # Server sends close code 3000 on auth failure
       expect(close_code).to eq(3000)
     ensure
-      ws&.close rescue nil
+      begin
+        ws&.close
+      rescue
+        nil
+      end
     end
   end
 end
@@ -203,3 +218,4 @@ end
 RSpec.describe "Auth integration", unless: INTEGRATION_ENABLED do
   it "skipped — set INTEGRATION=true and run against the compose stack to enable"
 end
+# rubocop:enable RSpec/DescribeClass, RSpec/MultipleDescribes

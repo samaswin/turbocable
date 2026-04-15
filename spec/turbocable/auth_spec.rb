@@ -18,9 +18,9 @@ RSpec.describe Turbocable::Auth do
   before do
     Turbocable.configure do |c|
       c.jwt_private_key = private_pem
-      c.jwt_public_key  = public_pem
-      c.jwt_issuer      = "test-issuer"
-      c.logger          = Logger.new(File::NULL)
+      c.jwt_public_key = public_pem
+      c.jwt_issuer = "test-issuer"
+      c.logger = Logger.new(File::NULL)
     end
   end
 
@@ -68,8 +68,8 @@ RSpec.describe Turbocable::Auth do
       Turbocable.reset!
       Turbocable.configure do |c|
         c.jwt_private_key = private_pem
-        c.jwt_public_key  = public_pem
-        c.logger          = Logger.new(File::NULL)
+        c.jwt_public_key = public_pem
+        c.logger = Logger.new(File::NULL)
       end
 
       token = described_class.issue_token(sub: "u1", allowed_streams: ["*"], ttl: 60)
@@ -213,7 +213,7 @@ RSpec.describe Turbocable::Auth do
   # Auth.publish_public_key!
   # =========================================================================
   describe ".publish_public_key!" do
-    let(:fake_kv) { instance_double("NATS::JetStream::KeyValue") }
+    let(:fake_kv) { instance_double(NATS::KeyValue) }
     let(:fake_connection) { instance_double(Turbocable::NatsConnection) }
 
     before do
@@ -237,7 +237,7 @@ RSpec.describe Turbocable::Auth do
 
     it "uses the configured jwt_kv_bucket and jwt_kv_key" do
       Turbocable.config.jwt_kv_bucket = "CUSTOM_BUCKET"
-      Turbocable.config.jwt_kv_key    = "custom_key"
+      Turbocable.config.jwt_kv_key = "custom_key"
 
       allow(fake_connection).to receive(:key_value).with("CUSTOM_BUCKET").and_return(fake_kv)
       allow(fake_kv).to receive(:put).with("custom_key", anything).and_return(1)
@@ -353,8 +353,16 @@ RSpec.describe Turbocable::Auth do
       log_output = StringIO.new
       Turbocable.config.logger = Logger.new(log_output)
 
-      described_class.issue_token(sub: "u", allowed_streams: ["*"], ttl: 60) rescue nil
-      described_class.publish_public_key! rescue nil
+      begin
+        described_class.issue_token(sub: "u", allowed_streams: ["*"], ttl: 60)
+      rescue
+        nil
+      end
+      begin
+        described_class.publish_public_key!
+      rescue
+        nil
+      end
 
       logged = log_output.string
       expect(logged).not_to include("PRIVATE KEY")

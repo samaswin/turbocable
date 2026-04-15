@@ -4,7 +4,7 @@ RSpec.describe Turbocable::NullAdapter do
   subject(:adapter) { described_class.new }
 
   before { described_class.reset! }
-  after  { described_class.reset! }
+  after { described_class.reset! }
 
   # -------------------------------------------------------------------------
   # publish — records into the class-level buffer
@@ -155,8 +155,9 @@ RSpec.describe Turbocable::NullAdapter do
       config.adapter = :null
       client = Turbocable::Client.new(config)
 
-      expect(Turbocable::NatsConnection).not_to receive(:new)
+      allow(Turbocable::NatsConnection).to receive(:new)
       client.broadcast("stream", {})
+      expect(Turbocable::NatsConnection).not_to have_received(:new)
     end
   end
 

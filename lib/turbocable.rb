@@ -61,9 +61,17 @@ module Turbocable
       @config_mutex ||= Mutex.new
       @client_mutex ||= Mutex.new
       @client_mutex.synchronize do
-        conn = @client&.send(:connection) rescue nil
+        conn = begin
+          @client&.send(:connection)
+        rescue
+          nil
+        end
         if conn.is_a?(NatsConnection) || conn.is_a?(NullAdapter)
-          conn.close rescue nil
+          begin
+            conn.close
+          rescue
+            nil
+          end
         end
         @client = nil
       end

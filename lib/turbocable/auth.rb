@@ -160,10 +160,10 @@ module Turbocable
       if pattern.end_with?("*")
         prefix = pattern[0..-2]
         return false if prefix.empty?
-        return prefix.match?(/\A[A-Za-z0-9_:\-]+\z/)
+        return prefix.match?(/\A[A-Za-z0-9_:-]+\z/)
       end
 
-      pattern.match?(/\A[A-Za-z0-9_:\-]+\z/)
+      pattern.match?(/\A[A-Za-z0-9_:-]+\z/)
     end
 
     # -------------------------------------------------------------------------
@@ -174,14 +174,14 @@ module Turbocable
       key = OpenSSL::PKey::RSA.new(pem)
       raise AuthError, "jwt_private_key must be an RSA *private* key (HMAC secrets are not supported)" unless key.private?
       key
-    rescue OpenSSL::PKey::RSAError, OpenSSL::PKey::PKeyError => e
+    rescue OpenSSL::PKey::PKeyError => e
       raise AuthError, "jwt_private_key is not a valid RSA private key: #{e.message}"
     end
     private_class_method :load_rsa_private_key!
 
     def self.load_rsa_public_key!(pem)
       OpenSSL::PKey::RSA.new(pem)
-    rescue OpenSSL::PKey::RSAError, OpenSSL::PKey::PKeyError => e
+    rescue OpenSSL::PKey::PKeyError => e
       raise AuthError, "jwt_public_key is not a valid RSA key: #{e.message}"
     end
     private_class_method :load_rsa_public_key!
@@ -219,7 +219,7 @@ module Turbocable
         "Tokens signed with the KV key will be rejected until the file-based key is removed. " \
         "See docs/auth.md for the rotation runbook."
       end
-    rescue StandardError
+    rescue
       # Best-effort probe — swallow all network errors silently
       nil
     end

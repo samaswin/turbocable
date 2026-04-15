@@ -27,10 +27,10 @@ module Turbocable
     # @param config [Turbocable::Configuration]
     def initialize(config)
       @config = config
-      @mutex  = Mutex.new
-      @nc     = nil # NATS::IO::Client
-      @js     = nil # JetStream context
-      @pid    = nil # PID at connection open time
+      @mutex = Mutex.new
+      @nc = nil # NATS::IO::Client
+      @js = nil # JetStream context
+      @pid = nil # PID at connection open time
 
       at_exit { close_quietly }
     end
@@ -60,7 +60,7 @@ module Turbocable
       ensure_connected!
       @nc.flush(timeout)
       true
-    rescue StandardError
+    rescue
       false
     end
 
@@ -125,8 +125,8 @@ module Turbocable
       nc = NATS::IO::Client.new
       nc.connect(opts)
 
-      @nc  = nc
-      @js  = nc.jetstream
+      @nc = nc
+      @js = nc.jetstream
       @pid = Process.pid
 
       @config.logger.debug { "[Turbocable] NATS connection opened (pid=#{@pid})" }
@@ -152,9 +152,9 @@ module Turbocable
       # TLS
       if @config.nats_tls || @config.nats_tls_cert_file || @config.nats_tls_ca_file
         tls_opts = {}
-        tls_opts[:ca_file]   = @config.nats_tls_ca_file   if @config.nats_tls_ca_file
+        tls_opts[:ca_file] = @config.nats_tls_ca_file if @config.nats_tls_ca_file
         tls_opts[:cert_file] = @config.nats_tls_cert_file if @config.nats_tls_cert_file
-        tls_opts[:key_file]  = @config.nats_tls_key_file  if @config.nats_tls_key_file
+        tls_opts[:key_file] = @config.nats_tls_key_file if @config.nats_tls_key_file
         opts[:tls] = tls_opts
       end
 
@@ -164,7 +164,7 @@ module Turbocable
     # Translates NATS-level errors into Turbocable errors with helpful messages.
     def handle_nats_error(error, subject)
       message = if error.message.to_s.include?("no stream matches subject") ||
-                   error.message.to_s.include?("no interest")
+          error.message.to_s.include?("no interest")
         "No JetStream stream found for subject '#{subject}'. " \
         "Is turbocable-server running and healthy? " \
         "(The server creates the TURBOCABLE stream on boot — the gem never does.)"
@@ -177,12 +177,12 @@ module Turbocable
 
     def close_quietly
       @nc&.close
-    rescue StandardError
+    rescue
       # Logger may already be torn down at exit — swallow all errors
       nil
     ensure
-      @nc  = nil
-      @js  = nil
+      @nc = nil
+      @js = nil
       @pid = nil
     end
   end

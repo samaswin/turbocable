@@ -37,12 +37,12 @@ module Turbocable
     # Conservative charset matching what the server's NATS glob authorizer
     # accepts as a subject token. Characters that break NATS subject parsing
     # (+.+, +*+, +>+, whitespace) are excluded.
-    STREAM_NAME_PATTERN = /\A[A-Za-z0-9_:\-]+\z/
+    STREAM_NAME_PATTERN = /\A[A-Za-z0-9_:-]+\z/
 
     # Exponential backoff parameters.
-    BASE_DELAY     = 0.05  # 50 ms
+    BASE_DELAY = 0.05  # 50 ms
     BACKOFF_FACTOR = 2
-    JITTER_FACTOR  = 0.20  # ±20%
+    JITTER_FACTOR = 0.20  # ±20%
 
     # @param config [Turbocable::Configuration]
     # @param connection [Turbocable::NatsConnection, Turbocable::NullAdapter, nil]
@@ -50,9 +50,9 @@ module Turbocable
     # @param clock [#call, nil] callable invoked with a duration in seconds
     #   instead of +Kernel.sleep+; injectable for deterministic backoff specs
     def initialize(config, connection: nil, clock: nil)
-      @config     = config
+      @config = config
       @connection = connection
-      @clock      = clock
+      @clock = clock
     end
 
     # Returns +true+ if the underlying adapter is reachable, +false+ otherwise.
@@ -94,7 +94,7 @@ module Turbocable
       validate_stream_name!(stream_name)
 
       codec_module = Codecs.fetch(codec || @config.default_codec)
-      bytes        = codec_module.encode(payload)
+      bytes = codec_module.encode(payload)
 
       enforce_payload_size!(bytes)
 
@@ -130,9 +130,9 @@ module Turbocable
 
     def publish_with_retries(subject, bytes)
       max_retries = @config.max_retries
-      timeout     = @config.publish_timeout
-      attempts    = 0
-      last_error  = nil
+      timeout = @config.publish_timeout
+      attempts = 0
+      last_error = nil
 
       loop do
         attempts += 1
@@ -183,9 +183,9 @@ module Turbocable
     # jitter. Capped at +config.publish_timeout+ so we never delay longer than
     # the ack window.
     def backoff_delay(attempt)
-      base   = BASE_DELAY * (BACKOFF_FACTOR**(attempt - 1))
+      base = BASE_DELAY * (BACKOFF_FACTOR**(attempt - 1))
       jitter = base * JITTER_FACTOR * ((rand * 2) - 1)
-      delay  = base + jitter
+      delay = base + jitter
       [delay, @config.publish_timeout].min
     end
 

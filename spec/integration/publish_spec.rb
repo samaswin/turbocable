@@ -18,17 +18,19 @@ require "nats/client"
 
 INTEGRATION_ENABLED = ENV["INTEGRATION"] == "true" unless defined?(INTEGRATION_ENABLED)
 
+PUBLISH_NATS_URL = ENV.fetch("TURBOCABLE_NATS_URL", "nats://localhost:4222")
+PUBLISH_SERVER_HEALTH_URL = ENV.fetch("TURBOCABLE_SERVER_HEALTH_URL", "http://localhost:9292/health")
+PUBLISH_HEALTH_TIMEOUT_SECS = Integer(ENV.fetch("HEALTH_TIMEOUT_SECS", "30"))
+
+# rubocop:disable RSpec/DescribeClass, RSpec/MultipleDescribes
 RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
   # -------------------------------------------------------------------------
   # Topology helpers
   # -------------------------------------------------------------------------
-  NATS_URL             = ENV.fetch("TURBOCABLE_NATS_URL",         "nats://localhost:4222")
-  SERVER_HEALTH_URL    = ENV.fetch("TURBOCABLE_SERVER_HEALTH_URL", "http://localhost:9292/health")
-  HEALTH_TIMEOUT_SECS  = Integer(ENV.fetch("HEALTH_TIMEOUT_SECS", "30"))
 
   def wait_for_server_health!
-    deadline = Time.now + HEALTH_TIMEOUT_SECS
-    uri      = URI(SERVER_HEALTH_URL)
+    deadline = Time.now + PUBLISH_HEALTH_TIMEOUT_SECS
+    uri = URI(PUBLISH_SERVER_HEALTH_URL)
     loop do
       begin
         response = Net::HTTP.get_response(uri)
@@ -36,7 +38,7 @@ RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
       rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError
         # server not ready yet
       end
-      raise "turbocable-server did not become healthy within #{HEALTH_TIMEOUT_SECS}s" if Time.now > deadline
+      raise "turbocable-server did not become healthy within #{PUBLISH_HEALTH_TIMEOUT_SECS}s" if Time.now > deadline
 
       sleep 1
     end
@@ -45,7 +47,7 @@ RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
   # -------------------------------------------------------------------------
   # Suite-level setup: verify topology once before all examples run
   # -------------------------------------------------------------------------
-  before(:all) do
+  before(:all) do # rubocop:disable RSpec/BeforeAfterAll
     wait_for_server_health!
   end
 
@@ -54,11 +56,11 @@ RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
   around do |example|
     Turbocable.reset!
     Turbocable.configure do |c|
-      c.nats_url        = NATS_URL
-      c.default_codec   = :json
+      c.nats_url = PUBLISH_NATS_URL
+      c.default_codec = :json
       c.publish_timeout = 5.0
-      c.max_retries     = 1
-      c.logger          = Logger.new(File::NULL)
+      c.max_retries = 1
+      c.logger = Logger.new(File::NULL)
     end
     example.run
     Turbocable.reset!
@@ -68,16 +70,16 @@ RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
   # Basic publish + JetStream receipt
   # -------------------------------------------------------------------------
   describe "Turbocable.broadcast" do
-    it "publishes a JSON message visible on the TURBOCABLE JetStream stream" do
-      stream   = "integration_test_#{SecureRandom.hex(4)}"
-      payload  = {text: "hello from integration test", at: Time.now.iso8601}
+    it "publishes a JSON message visible on the TURBOCABLE JetStream stream" do # rubocop:disable RSpec/ExampleLength
+      stream = "integration_test_#{SecureRandom.hex(4)}"
+      payload = {text: "hello from integration test", at: Time.now.iso8601}
 
       # Subscribe to the subject *before* publishing so we can pull the message
       received = nil
       nc = NATS::IO::Client.new
-      nc.connect(NATS_URL)
+      nc.connect(PUBLISH_NATS_URL)
 
-      js      = nc.jetstream
+      js = nc.jetstream
       subject = "TURBOCABLE.#{stream}"
 
       # Publish via the gem
@@ -142,10 +144,10 @@ RSpec.describe "Core publish path (integration)", if: INTEGRATION_ENABLED do
     it "raises PublishError with an actionable message when NATS is unreachable" do
       Turbocable.reset!
       Turbocable.configure do |c|
-        c.nats_url        = "nats://localhost:14222"  # nothing listening here
+        c.nats_url = "nats://localhost:14222"  # nothing listening here
         c.publish_timeout = 1.0
-        c.max_retries     = 0
-        c.logger          = Logger.new(File::NULL)
+        c.max_retries = 0
+        c.logger = Logger.new(File::NULL)
       end
 
       expect { Turbocable.broadcast("unreachable", {}) }
@@ -157,3 +159,4 @@ end
 RSpec.describe "Core publish path (integration)", unless: INTEGRATION_ENABLED do
   it "skipped — set INTEGRATION=true and run against the compose stack to enable"
 end
+# rubocop:enable RSpec/DescribeClass, RSpec/MultipleDescribes

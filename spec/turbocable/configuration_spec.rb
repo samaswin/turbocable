@@ -124,7 +124,7 @@ RSpec.describe Turbocable::Configuration do
     end
 
     it "accepts logger assignment" do
-      logger = instance_double("Logger", debug: nil, info: nil, warn: nil, error: nil)
+      logger = instance_double(Logger, debug: nil, info: nil, warn: nil, error: nil)
       config.logger = logger
       expect(config.logger).to be(logger)
     end
@@ -150,14 +150,14 @@ RSpec.describe Turbocable::Configuration do
     end
 
     it "passes with only nats_user/nats_password set" do
-      config.nats_user     = "alice"
+      config.nats_user = "alice"
       config.nats_password = "pw"
       expect { config.validate! }.not_to raise_error
     end
 
     it "raises ConfigurationError when creds_file and token are both set" do
       config.nats_creds_file = "/some/file.creds"
-      config.nats_token      = "tok"
+      config.nats_token = "tok"
       expect { config.validate! }.to raise_error(
         Turbocable::ConfigurationError, /mutually exclusive/
       )
@@ -165,7 +165,7 @@ RSpec.describe Turbocable::Configuration do
 
     it "raises ConfigurationError when creds_file and user/password are both set" do
       config.nats_creds_file = "/some/file.creds"
-      config.nats_user       = "alice"
+      config.nats_user = "alice"
       expect { config.validate! }.to raise_error(Turbocable::ConfigurationError)
     end
   end
@@ -184,7 +184,7 @@ RSpec.describe Turbocable::Configuration do
     it "raises ConfigurationError when cert is set without key" do
       ca = Tempfile.new("ca.pem")
       cert = Tempfile.new("cert.pem")
-      config.nats_tls_ca_file   = ca.path
+      config.nats_tls_ca_file = ca.path
       config.nats_tls_cert_file = cert.path
       # key intentionally omitted
 
@@ -209,9 +209,9 @@ RSpec.describe Turbocable::Configuration do
 
     it "passes when cert and key both point to existing files" do
       cert = Tempfile.new("cert.pem")
-      key  = Tempfile.new("key.pem")
+      key = Tempfile.new("key.pem")
       config.nats_tls_cert_file = cert.path
-      config.nats_tls_key_file  = key.path
+      config.nats_tls_key_file = key.path
 
       expect { config.validate! }.not_to raise_error
     ensure

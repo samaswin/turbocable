@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/DescribeClass
 RSpec.describe "Turbocable error classes" do
   describe Turbocable::Error do
     it "inherits from StandardError" do
@@ -47,11 +48,11 @@ RSpec.describe "Turbocable error classes" do
   end
 
   describe Turbocable::PublishError do
-    let(:cause) { RuntimeError.new("nats exploded") }
-
     subject(:error) do
       described_class.new("give up", subject: "TURBOCABLE.foo", attempts: 3, cause: cause)
     end
+
+    let(:cause) { RuntimeError.new("nats exploded") }
 
     it "inherits from Turbocable::Error" do
       expect(described_class.superclass).to be(Turbocable::Error)
@@ -104,3 +105,4 @@ RSpec.describe "Turbocable error classes" do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass

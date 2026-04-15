@@ -38,7 +38,7 @@ module Turbocable
     # Default maximum number of broadcast records kept in memory.
     MAX_BUFFER = 1_000
 
-    @mutex      = Mutex.new
+    @mutex = Mutex.new
     @broadcasts = []
 
     class << self
@@ -112,7 +112,8 @@ module Turbocable
     # +close+ on the adapter without a conditional.
     #
     # @return [void]
-    def close; end
+    def close
+    end
 
     # Lightweight struct returned by +#publish+ in place of a real
     # +NATS::JetStream::PubAck+.

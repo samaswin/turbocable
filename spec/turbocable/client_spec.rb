@@ -3,15 +3,15 @@
 require "msgpack"
 
 RSpec.describe Turbocable::Client do
+  subject(:client) { described_class.new(config, connection: stub_connection) }
+
   let(:config) { Turbocable::Configuration.new }
 
   # A stub NatsConnection that records publishes without hitting NATS
-  let(:fake_ack) { double("PubAck", stream: "TURBOCABLE", seq: 1) }
+  let(:fake_ack) { Struct.new(:stream, :seq).new("TURBOCABLE", 1) }
   let(:stub_connection) do
     instance_double(Turbocable::NatsConnection, publish: fake_ack)
   end
-
-  subject(:client) { described_class.new(config, connection: stub_connection) }
 
   # -------------------------------------------------------------------------
   # Stream name validation
@@ -37,7 +37,7 @@ RSpec.describe Turbocable::Client do
       "unicode_ñoño",
       "",
       "has>end",
-      "*.star",
+      "*.star"
     ]
 
     valid_names.each do |name|
@@ -60,30 +60,33 @@ RSpec.describe Turbocable::Client do
   describe "codec selection" do
     it "uses config.default_codec when no codec is specified" do
       config.default_codec = :json
-      expect(stub_connection).to receive(:publish) do |_subject, bytes, **|
+      allow(stub_connection).to receive(:publish) do |_subject, bytes, **|
         parsed = ::JSON.parse(bytes)
         expect(parsed["msg"]).to eq("hello")
         fake_ack
       end
       client.broadcast("stream", {msg: "hello"})
+      expect(stub_connection).to have_received(:publish)
     end
 
     it "uses the per-call codec override" do
-      expect(stub_connection).to receive(:publish) do |_subject, bytes, **|
+      allow(stub_connection).to receive(:publish) do |_subject, bytes, **|
         parsed = ::JSON.parse(bytes)
         expect(parsed["x"]).to eq(1)
         fake_ack
       end
       client.broadcast("stream", {x: 1}, codec: :json)
+      expect(stub_connection).to have_received(:publish)
     end
 
     it "accepts :msgpack codec and encodes the payload" do
-      expect(stub_connection).to receive(:publish) do |_subject, bytes, **|
+      allow(stub_connection).to receive(:publish) do |_subject, bytes, **|
         unpacked = ::MessagePack.unpack(bytes)
         expect(unpacked["msg"]).to eq("hello")
         fake_ack
       end
       client.broadcast("stream", {"msg" => "hello"}, codec: :msgpack)
+      expect(stub_connection).to have_received(:publish)
     end
 
     it "raises ConfigurationError for unknown codec name" do
@@ -98,12 +101,17 @@ RSpec.describe Turbocable::Client do
   describe "subject construction" do
     it "builds the subject as '<prefix>.<stream_name>'" do
       config.subject_prefix = "TURBOCABLE"
-      expect(stub_connection).to receive(:publish).with(
+      allow(stub_connection).to receive(:publish).with(
         "TURBOCABLE.chat_room_99",
         anything,
         timeout: anything
       ).and_return(fake_ack)
       client.broadcast("chat_room_99", {})
+      expect(stub_connection).to have_received(:publish).with(
+        "TURBOCABLE.chat_room_99",
+        anything,
+        timeout: anything
+      )
     end
   end
 
@@ -122,8 +130,9 @@ RSpec.describe Turbocable::Client do
 
     it "does not call NATS when payload is too large" do
       config.max_payload_bytes = 5
-      expect(stub_connection).not_to receive(:publish)
+      allow(stub_connection).to receive(:publish)
       expect { client.broadcast("s", {data: "big" * 10}) }.to raise_error(Turbocable::PayloadTooLargeError)
+      expect(stub_connection).not_to have_received(:publish)
     end
 
     it "allows payloads exactly at the limit" do
@@ -131,8 +140,9 @@ RSpec.describe Turbocable::Client do
       encoded = Turbocable::Codecs::JSON.encode(payload)
       config.max_payload_bytes = encoded.bytesize
 
-      expect(stub_connection).to receive(:publish).and_return(fake_ack)
+      allow(stub_connection).to receive(:publish).and_return(fake_ack)
       expect { client.broadcast("stream", payload) }.not_to raise_error
+      expect(stub_connection).to have_received(:publish)
     end
   end
 

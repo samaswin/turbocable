@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/DescribeClass
 RSpec.describe "Turbocable health check" do
   # -------------------------------------------------------------------------
   # healthy? — delegates to Client#healthy? which delegates to adapter#ping
@@ -54,8 +55,10 @@ RSpec.describe "Turbocable health check" do
     context "with the null adapter" do
       it "always returns true without touching NATS" do
         Turbocable.configure { |c| c.adapter = :null }
-        expect(Turbocable::NatsConnection).not_to receive(:new)
-        expect(Turbocable.healthy?).to be true
+        allow(Turbocable::NatsConnection).to receive(:new)
+        result = Turbocable.healthy?
+        expect(Turbocable::NatsConnection).not_to have_received(:new)
+        expect(result).to be true
       end
     end
   end
@@ -114,10 +117,11 @@ RSpec.describe "Turbocable health check" do
       it "passes publish_timeout to ping" do
         config.publish_timeout = 0.5
         stub_conn = instance_double(Turbocable::NatsConnection)
-        expect(stub_conn).to receive(:ping).with(timeout: 0.5).and_return(true)
+        allow(stub_conn).to receive(:ping).with(timeout: 0.5).and_return(true)
 
         client = described_class.new(config, connection: stub_conn)
         client.healthy?
+        expect(stub_conn).to have_received(:ping).with(timeout: 0.5)
       end
 
       it "re-raises ConfigurationError without swallowing" do
@@ -143,3 +147,4 @@ RSpec.describe "Turbocable health check" do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass

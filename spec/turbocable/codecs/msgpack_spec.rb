@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable RSpec/SpecFilePathFormat
 require "msgpack"
 # Trigger the lazy-load so the constant is defined before the describe block
 Turbocable::Codecs.fetch(:msgpack)
@@ -166,3 +167,4 @@ RSpec.describe Turbocable::Codecs::MsgPack do
     end
   end
 end
+# rubocop:enable RSpec/SpecFilePathFormat
