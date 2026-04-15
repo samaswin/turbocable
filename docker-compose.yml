@@ -1,7 +1,39 @@
 # Reference topology used by bin/dev and every integration spec from Phase 1
 # onward. Versions here are the contract: phase specs run against these pins,
 # so bumping them is a deliberate PR, not a casual update.
+#
+# == Services
+#
+#   nats               — default, no-auth NATS (used by most specs)
+#   turbocable-server  — the Rust gateway, depends on nats
+#   rspec              — Ruby test runner; runs INTEGRATION specs inside compose
+#
+# == Auth variant services (Phase 1 NATS-auth specs)
+#
+#   nats-token-auth    — NATS with static token authorization
+#   nats-user-pass     — NATS with user+password authorization
+#
+# mTLS variant is documented but not wired here because it requires generated
+# TLS fixtures. See docs/auth.md for the mTLS setup runbook.
+#
+# == Usage
+#
+#   # Boot default stack (no-auth):
+#   docker compose up -d nats turbocable-server
+#
+#   # Run integration suite against default stack:
+#   docker compose run --rm rspec
+#
+#   # Run token-auth auth-mode suite:
+#   docker compose run --rm \
+#     -e AUTH_MODE=token-auth \
+#     -e TURBOCABLE_NATS_URL=nats://nats-token-auth:4222 \
+#     rspec bundle exec rspec spec/integration/nats_auth_spec.rb
+
 services:
+  # ---------------------------------------------------------------------------
+  # Default NATS (no-auth, JetStream enabled)
+  # ---------------------------------------------------------------------------
   nats:
     image: nats:2.10
     command: ["-js", "-m", "8222"]
@@ -14,6 +46,9 @@ services:
       timeout: 2s
       retries: 15
 
+  # ---------------------------------------------------------------------------
+  # TurboCable server (Rust gateway)
+  # ---------------------------------------------------------------------------
   turbocable-server:
     image: ghcr.io/turbocable/server:latest
     depends_on:
@@ -29,3 +64,101 @@ services:
       interval: 2s
       timeout: 2s
       retries: 15
+
+  # ---------------------------------------------------------------------------
+  # Ruby test runner — runs INTEGRATION specs inside compose network
+  # ---------------------------------------------------------------------------
+  rspec:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      nats:
+        condition: service_healthy
+      turbocable-server:
+        condition: service_healthy
+    environment:
+      INTEGRATION: "true"
+      AUTH_MODE: "no-auth"
+      TURBOCABLE_NATS_URL: nats://nats:4222
+      TURBOCABLE_SERVER_HEALTH_URL: http://turbocable-server:9292/health
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    working_dir: /app
+    command: ["bundle", "exec", "rspec"]
+
+  # ---------------------------------------------------------------------------
+  # NATS — token-auth variant (Phase 1 auth spec)
+  # ---------------------------------------------------------------------------
+  nats-token-auth:
+    image: nats:2.10
+    command: ["-js", "-m", "8222", "-c", "/etc/nats/token-auth.conf"]
+    volumes:
+      - ./config/nats/token-auth.conf:/etc/nats/token-auth.conf:ro
+    ports:
+      - "4223:4222"
+      - "8223:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  # ---------------------------------------------------------------------------
+  # TurboCable server — token-auth variant
+  # ---------------------------------------------------------------------------
+  turbocable-server-token-auth:
+    image: ghcr.io/turbocable/server:latest
+    depends_on:
+      nats-token-auth:
+        condition: service_healthy
+    environment:
+      TURBOCABLE_NATS_URL: nats://nats-token-auth:4222?auth_token=test-token-changeme
+      RUST_LOG: info
+    ports:
+      - "9293:9292"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  # ---------------------------------------------------------------------------
+  # NATS — user+password variant (Phase 1 auth spec)
+  # ---------------------------------------------------------------------------
+  nats-user-pass:
+    image: nats:2.10
+    command: ["-js", "-m", "8222", "-c", "/etc/nats/user-pass.conf"]
+    volumes:
+      - ./config/nats/user-pass.conf:/etc/nats/user-pass.conf:ro
+    ports:
+      - "4224:4222"
+      - "8224:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  # ---------------------------------------------------------------------------
+  # TurboCable server — user+password variant
+  # ---------------------------------------------------------------------------
+  turbocable-server-user-pass:
+    image: ghcr.io/turbocable/server:latest
+    depends_on:
+      nats-user-pass:
+        condition: service_healthy
+    environment:
+      TURBOCABLE_NATS_URL: nats://testuser:testpassword@nats-user-pass:4222
+      RUST_LOG: info
+    ports:
+      - "9294:9292"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  bundle_cache:

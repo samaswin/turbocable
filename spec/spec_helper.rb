@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 require "simplecov"
+require "tempfile"
 
 SimpleCov.start do
   add_filter "/spec/"
   enable_coverage :branch
-  # Phase 0 ships an empty skeleton; the 90% floor kicks in once real code
-  # lands in Phase 1. Leaving the floor off here keeps the placeholder spec
-  # from failing a coverage check against a file with no executable lines.
-  # minimum_coverage 90
+  # Phase 1 real code is in place — enforce 90% floor.
+  minimum_coverage 90
 end
 
 require "turbocable"
@@ -27,4 +26,9 @@ RSpec.configure do |config|
   config.warnings = true
   config.order = :random
   Kernel.srand config.seed
+
+  # Reset global Turbocable state between examples that modify it
+  config.after(:each) do
+    Turbocable.reset! if Turbocable.instance_variable_defined?(:@config)
+  end
 end

@@ -1,6 +1,6 @@
 # turbocable (Ruby gem) — Scope & Architecture
 
-> **Status:** Not started. This document is the authoritative scope and
+> **Status:** Phase 1 complete. This document is the authoritative scope and
 > architectural plan for the upstream [`turbocable`](https://github.com/samaswin/turbocable)
 > Ruby gem. It targets interop with `turbocable-server` as documented in
 > [`docs/nats-jetstream.md`](../nats-jetstream.md),
@@ -19,6 +19,45 @@ non-Rails Ruby process.
 
 The gem owns **one direction only**: backend → NATS → gateway. It is not a
 WebSocket server, not a subscriber, and does not read from JetStream.
+
+## 1a. Runtime prerequisites
+
+The gem connects directly to **nats-server** (TCP port 4222) — it never
+connects to `turbocable-server`. However, `turbocable-server` is still a hard
+runtime prerequisite for two reasons:
+
+1. **Stream creation.** `turbocable-server` creates the `TURBOCABLE` JetStream
+   stream idempotently on startup (`get_or_create_stream`). The gem deliberately
+   never creates or alters the stream. If `turbocable-server` has never booted,
+   the stream does not exist and every `Turbocable.broadcast` call fails
+   immediately with `PublishError` ("no stream matches subject — is
+   turbocable-server running?").
+
+2. **No point without it.** Even if the stream were pre-created manually, NATS
+   would just accumulate messages with no consumer. `turbocable-server` is the
+   only process that subscribes to `TURBOCABLE.>` and fans messages out to
+   WebSocket clients.
+
+**In tests**, the `NullAdapter` (Phase 4) replaces the NATS connection entirely,
+removing the dependency on both nats-server and `turbocable-server`. Unit and
+adapter-level specs run with no external processes.
+
+Network topology summary:
+
+```
+Your Ruby app
+(turbocable gem)
+      │ TCP :4222  — gem connects HERE
+      ▼
+ nats-server
+      │ JetStream subscribe
+      ▼
+ turbocable-server   — gem never connects here directly
+ (Rust, port 9292)
+      │ WebSocket fan-out
+      ▼
+ Browser / Mobile clients (up to 1M+ concurrent)
+```
 
 ## 2. Scope
 

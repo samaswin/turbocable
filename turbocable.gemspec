@@ -36,6 +36,6 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ["lib"]
 
-  # No runtime dependencies in Phase 0 — added in Phase 1 (nats-pure) and
-  # Phase 3 (jwt). msgpack is added optionally in Phase 2.
+  # Phase 1: core publish path
+  spec.add_dependency "nats-pure", "~> 2.4"
 end
