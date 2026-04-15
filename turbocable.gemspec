@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir.chdir(__dir__) do
     Dir[
       "lib/**/*.rb",
+      "docs/**/*.md",
       "README.md",
       "CHANGELOG.md",
       "LICENSE",

@@ -56,6 +56,7 @@ module Turbocable
     # +instance_double+ in a test.
     #
     # @api private
+    # @return [void]
     def reset!
       @config_mutex ||= Mutex.new
       @client_mutex ||= Mutex.new

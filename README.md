@@ -2,14 +2,14 @@
 
 Pure-Ruby publisher for the [TurboCable](https://github.com/samaswin/turbocable-server) fan-out pipeline. `turbocable` publishes messages to NATS JetStream on the `TURBOCABLE.*` subject tree, where `turbocable-server` picks them up and fans them out to WebSocket subscribers.
 
-> **Status: Phase 2 — codecs, error surface, retries.** The gem publishes JSON and MessagePack messages to NATS JetStream with exponential-backoff retries. JWT auth (Phase 3) and the null adapter (Phase 4) are still ahead.
+> **Status: 1.0 — stable.** Publishes JSON and MessagePack to NATS JetStream, mints RS256 JWTs, publishes rotating public keys to NATS KV, and provides a null adapter for test suites.
 
 ## Installation
 
 Add to your `Gemfile`:
 
 ```ruby
-gem "turbocable", "~> 0.0"
+gem "turbocable", "~> 1.0"
 ```
 
 Or install directly:
@@ -22,6 +22,18 @@ gem install turbocable
 
 - Ruby `>= 3.1`
 - A running `turbocable-server` in front of `nats-server` with JetStream enabled (see `docker-compose.yml`)
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](docs/getting-started.md) | Installation, first broadcast, Rails integration |
+| [Configuration](docs/configuration.md) | All options, env vars, NATS auth modes |
+| [Codecs](docs/codecs.md) | JSON and MessagePack, ext types, tradeoffs |
+| [Authentication](docs/auth.md) | JWT minting, public key publishing, rotation runbook |
+| [Testing](docs/testing.md) | Null adapter, RSpec/Minitest setup |
+| [Operations](docs/operations.md) | Health checks, logging, retries, Kubernetes |
+| [API Stability](docs/api-stability.md) | What is and isn't part of the public API |
 
 ## Quickstart
 
@@ -71,6 +83,7 @@ Boot the server stack locally with `bin/dev` before running your application:
 | `publish_timeout` | `TURBOCABLE_PUBLISH_TIMEOUT` | `2.0` | Seconds to wait for JetStream ack |
 | `max_retries` | `TURBOCABLE_MAX_RETRIES` | `3` | Retry count on transient failures |
 | `max_payload_bytes` | `TURBOCABLE_MAX_PAYLOAD_BYTES` | `1_000_000` | Pre-publish size limit |
+| `adapter` | `TURBOCABLE_ADAPTER` | `:nats` | `:nats` or `:null` (test adapter) |
 | `logger` | — | `Logger.new($stdout, level: :warn)` | Logger instance |
 
 ### NATS authentication
@@ -174,6 +187,37 @@ A successful `broadcast` means NATS JetStream has persisted the message. If the
 server operator has set `TURBOCABLE_STREAM_RATE_LIMIT_RPS`, messages that exceed
 the stream rate limit may be dropped by `turbocable-server` *after* the NATS ack.
 A green `broadcast` is a persistence guarantee, not an end-to-end delivery guarantee.
+
+## Health checks
+
+```ruby
+# Publisher → NATS reachability (returns true/false, never raises on network errors)
+Turbocable.healthy?
+
+# Strict variant — raises Turbocable::HealthCheckError on failure
+Turbocable.healthcheck!
+```
+
+`healthy?` checks publisher → NATS connectivity only. To check gateway liveness, probe the server's HTTP endpoint:
+
+```sh
+curl http://turbocable-server:9292/health
+# => {"status":"ok","version":"0.5.0","connections":0,"nats_connected":true}
+```
+
+See [docs/operations.md](docs/operations.md) for a Kubernetes `livenessProbe` example combining both probes.
+
+## Server compatibility matrix
+
+The table below lists the `turbocable-server` versions this gem has been tested against. The E2E integration spec parses `/health.version` after server boot and records it in the test report — this table is generated from those recorded versions.
+
+| turbocable (gem) | turbocable-server | Notes |
+|:---:|:---:|-------|
+| `1.0.x` | `≥ 0.5.0` | Full feature support (JSON, MsgPack, JWT, KV hot-reload) |
+
+**Minimum supported server version: `0.5.0`.**
+
+If you are running an older server build, use `cargo build` from the `samaswin/turbocable-server` `main` branch or pull `ghcr.io/turbocable/server:latest`.
 
 ## Development
 

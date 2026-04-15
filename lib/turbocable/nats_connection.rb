@@ -84,7 +84,9 @@ module Turbocable
       end
     end
 
-    # Closes the connection if open. Safe to call multiple times.
+    # Closes the NATS connection and resets internal state. Safe to call
+    # multiple times — subsequent calls are no-ops.
+    #
     # @return [void]
     def close
       @mutex.synchronize do

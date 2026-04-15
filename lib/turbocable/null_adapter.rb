@@ -57,7 +57,7 @@ module Turbocable
       end
 
       # Clears all recorded broadcasts. Call this between test examples to
-      # prevent cross-example pollution.
+      # prevent cross-example pollution. Thread-safe.
       #
       # @return [void]
       def reset!
