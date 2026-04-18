@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Fixed
+
+- `Turbocable::Auth.publish_public_key!` auto-creates the JWT KV bucket again when
+  nats-pure raises `NATS::KeyValue::BucketNotFoundError` (in addition to the older
+  `JetStream::Error::NotFound` / `StreamNotFound` types).
 
 ---
 

@@ -24,6 +24,14 @@ module Turbocable
   #
   # @api private
   class NatsConnection
+    # Exception types raised by nats-pure when a JetStream KV bucket does not
+    # exist yet (+#key_value+ must then call +create_key_value+).
+    KV_BUCKET_MISSING_ON_LOOKUP = [
+      NATS::JetStream::Error::NotFound,
+      NATS::JetStream::Error::StreamNotFound,
+      *(defined?(NATS::KeyValue::BucketNotFoundError) ? [NATS::KeyValue::BucketNotFoundError] : [])
+    ].freeze
+
     # @param config [Turbocable::Configuration]
     def initialize(config)
       @config = config
@@ -79,7 +87,7 @@ module Turbocable
       ensure_connected!
       begin
         @js.key_value(bucket)
-      rescue NATS::JetStream::Error::NotFound, NATS::JetStream::Error::StreamNotFound
+      rescue *KV_BUCKET_MISSING_ON_LOOKUP
         @js.create_key_value(bucket: bucket, history: history)
       end
     end

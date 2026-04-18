@@ -35,7 +35,10 @@ services:
   # Default NATS (no-auth, JetStream enabled)
   # ---------------------------------------------------------------------------
   nats:
-    image: nats:2.10
+    # Alpine variant includes BusyBox wget used by healthcheck below. The default
+    # nats:2.10 image is distroless and has no wget/curl/sh, so compose never
+    # reaches "healthy" and dependent services never start.
+    image: nats:2.10-alpine
     command: ["-js", "-m", "8222"]
     ports:
       - "4222:4222"
@@ -59,11 +62,8 @@ services:
       RUST_LOG: info
     ports:
       - "9292:9292"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
+    # ghcr.io/samaswin/turbocable-server is distroless (no wget/curl/sh). Specs
+    # and bin/dev probe /health from the host or peer containers instead.
 
   # ---------------------------------------------------------------------------
   # Ruby test runner — runs INTEGRATION specs inside compose network
@@ -76,7 +76,7 @@ services:
       nats:
         condition: service_healthy
       turbocable-server:
-        condition: service_healthy
+        condition: service_started
     environment:
       INTEGRATION: "true"
       AUTH_MODE: "no-auth"
@@ -92,7 +92,7 @@ services:
   # NATS — token-auth variant (Phase 1 auth spec)
   # ---------------------------------------------------------------------------
   nats-token-auth:
-    image: nats:2.10
+    image: nats:2.10-alpine
     command: ["-js", "-m", "8222", "-c", "/etc/nats/token-auth.conf"]
     volumes:
       - ./config/nats/token-auth.conf:/etc/nats/token-auth.conf:ro
@@ -118,17 +118,13 @@ services:
       RUST_LOG: info
     ports:
       - "9293:9292"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
+    # See turbocable-server service: distroless image, no in-container HTTP probe.
 
   # ---------------------------------------------------------------------------
   # NATS — user+password variant (Phase 1 auth spec)
   # ---------------------------------------------------------------------------
   nats-user-pass:
-    image: nats:2.10
+    image: nats:2.10-alpine
     command: ["-js", "-m", "8222", "-c", "/etc/nats/user-pass.conf"]
     volumes:
       - ./config/nats/user-pass.conf:/etc/nats/user-pass.conf:ro
@@ -154,11 +150,7 @@ services:
       RUST_LOG: info
     ports:
       - "9294:9292"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9292/health"]
-      interval: 2s
-      timeout: 2s
-      retries: 15
+    # See turbocable-server service: distroless image, no in-container HTTP probe.
 
 volumes:
   bundle_cache:
