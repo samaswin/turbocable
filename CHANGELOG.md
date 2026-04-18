@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-04-18
+
 ### Changed
 
 - **RubyGems name:** the installable gem is now **`turbocable_nats`** (RubyGems
@@ -14,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The Ruby API remains the **`Turbocable`** module. Prefer `gem "turbocable_nats"`
   and `require "turbocable_nats"`; `lib/turbocable.rb` is still shipped for
   compatibility with `require "turbocable"` when both files are on the load path.
+- README and `docs/getting-started.md` now pin examples to **`~> 1.0.2`**.
 
 ---
 
@@ -175,7 +180,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bin/dev` stub that boots the compose stack and blocks on `GET :9292/health`.
   - `CHANGELOG.md`, `README.md` (one-paragraph pitch + status), `LICENSE` (MIT).
 
-[Unreleased]: https://github.com/samaswin/turbocable/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/samaswin/turbocable/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/samaswin/turbocable/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/samaswin/turbocable/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/samaswin/turbocable/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/samaswin/turbocable/compare/v0.3.0...v0.4.0

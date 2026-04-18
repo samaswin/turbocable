@@ -2,20 +2,20 @@
 
 Pure-Ruby publisher for the [TurboCable](https://github.com/samaswin/turbocable-server) fan-out pipeline. The **`turbocable_nats`** gem (Ruby API: **`Turbocable`**) publishes messages to NATS JetStream on the `TURBOCABLE.*` subject tree, where `turbocable-server` picks them up and fans them out to WebSocket subscribers.
 
-> **Status: 1.0 — stable.** Publishes JSON and MessagePack to NATS JetStream, mints RS256 JWTs, publishes rotating public keys to NATS KV, and provides a null adapter for test suites.
+> **Current release: `1.0.2`.** The **1.0.x** line is stable: JSON and MessagePack to NATS JetStream, RS256 JWT minting, rotating public keys to NATS KV, and a null adapter for test suites.
 
 ## Installation
 
 Add to your `Gemfile`:
 
 ```ruby
-gem "turbocable_nats", "~> 1.0"
+gem "turbocable_nats", "~> 1.0.2"
 ```
 
 Or install directly:
 
 ```sh
-gem install turbocable_nats
+gem install turbocable_nats -v 1.0.2
 ```
 
 ## Requirements

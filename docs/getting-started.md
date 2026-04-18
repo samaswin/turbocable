@@ -39,7 +39,7 @@ cd turbocable
 Add `turbocable_nats` to your app's `Gemfile`:
 
 ```ruby
-gem "turbocable_nats", "~> 1.0"
+gem "turbocable_nats", "~> 1.0.2"
 ```
 
 Then:
