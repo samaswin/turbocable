@@ -11,7 +11,11 @@ RSpec.describe Turbocable::NatsConnection do
       end
     end
 
-    let(:js) { instance_double(NATS::JetStream::Context) }
+    # nats-pure adds +#key_value+ / +#create_key_value+ with +extend+ inside
+    # +NATS::JetStream#initialize+, so +instance_double(NATS::JetStream)+ cannot verify them.
+    # rubocop:disable RSpec/VerifiedDoubles
+    let(:js) { spy("jetstream") }
+    # rubocop:enable RSpec/VerifiedDoubles
     # Minimal stand-in for NATS::IO::Client — only +closed?+ is read by
     # +connected_in_current_process?+.
     let(:nc) do
