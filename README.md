@@ -222,6 +222,9 @@ If you are running an older server build, use `cargo build` from the `samaswin/t
 ## Development
 
 ```sh
+git clone https://github.com/samaswin/turbocable_nats.git
+cd turbocable_nats
+
 bundle install
 bundle exec rspec              # unit tests (no NATS required)
 bundle exec standardrb         # linter

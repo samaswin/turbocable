@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `require "turbocable_nats"`; `lib/turbocable.rb` is still shipped for
   compatibility with `require "turbocable"` when both files are on the load path.
 - README and `docs/getting-started.md` now pin examples to **`~> 1.0.2`**.
+- **GitHub repository** URLs and clone paths use **`samaswin/turbocable_nats`**
+  with a default checkout directory of **`turbocable_nats`** (rename the repo on
+  GitHub from `turbocable` if it has not been renamed yet; GitHub redirects help
+  during the transition).
 
 ---
 
@@ -180,11 +184,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bin/dev` stub that boots the compose stack and blocks on `GET :9292/health`.
   - `CHANGELOG.md`, `README.md` (one-paragraph pitch + status), `LICENSE` (MIT).
 
-[Unreleased]: https://github.com/samaswin/turbocable/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/samaswin/turbocable/compare/v1.0.0...v1.0.2
-[1.0.0]: https://github.com/samaswin/turbocable/compare/v0.5.0...v1.0.0
-[0.5.0]: https://github.com/samaswin/turbocable/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/samaswin/turbocable/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/samaswin/turbocable/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/samaswin/turbocable/compare/v0.0.1...v0.2.0
-[0.0.1]: https://github.com/samaswin/turbocable/releases/tag/v0.0.1
+[Unreleased]: https://github.com/samaswin/turbocable_nats/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/samaswin/turbocable_nats/compare/v1.0.0...v1.0.2
+[1.0.0]: https://github.com/samaswin/turbocable_nats/compare/v0.5.0...v1.0.0
+[0.5.0]: https://github.com/samaswin/turbocable_nats/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/samaswin/turbocable_nats/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/samaswin/turbocable_nats/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/samaswin/turbocable_nats/compare/v0.0.1...v0.2.0
+[0.0.1]: https://github.com/samaswin/turbocable_nats/releases/tag/v0.0.1

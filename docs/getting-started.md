@@ -25,8 +25,8 @@ This guide walks you from zero to your first broadcast in a Rails app. For a pla
 The fastest way to get both is with Docker Compose (included in this repo):
 
 ```sh
-git clone https://github.com/samaswin/turbocable
-cd turbocable
+git clone https://github.com/samaswin/turbocable_nats
+cd turbocable_nats
 ./bin/dev   # boots nats:2.10-alpine + ghcr.io/samaswin/turbocable-server:latest
 ```
 
@@ -52,10 +52,10 @@ bundle install
 
 ## Boot the server stack
 
-For local development with your own app, the compose stack in the `turbocable` repo is the easiest starting point:
+For local development with your own app, the compose stack in the `turbocable_nats` repo is the easiest starting point:
 
 ```sh
-# From your turbocable clone:
+# From your turbocable_nats clone:
 ./bin/dev
 ```
 

@@ -15,14 +15,14 @@ Gem::Specification.new do |spec|
     Rails and any pure-Ruby process that needs to broadcast without owning the
     delivery path. (RubyGems package name: turbocable_nats.)
   DESC
-  spec.homepage = "https://github.com/samaswin/turbocable"
+  spec.homepage = "https://github.com/samaswin/turbocable_nats"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/samaswin/turbocable"
-  spec.metadata["changelog_uri"] = "https://github.com/samaswin/turbocable/blob/main/CHANGELOG.md"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/samaswin/turbocable/issues"
+  spec.metadata["source_code_uri"] = "https://github.com/samaswin/turbocable_nats"
+  spec.metadata["changelog_uri"] = "https://github.com/samaswin/turbocable_nats/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/samaswin/turbocable_nats/issues"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = Dir.chdir(__dir__) do

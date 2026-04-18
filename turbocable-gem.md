@@ -1,7 +1,7 @@
 # turbocable_nats (Ruby gem) — Scope & Architecture
 
 > **Status:** Phase 1 complete. This document is the authoritative scope and
-> architectural plan for the upstream [`turbocable`](https://github.com/samaswin/turbocable)
+> architectural plan for the upstream [`turbocable_nats`](https://github.com/samaswin/turbocable_nats)
 > repository (RubyGems package **`turbocable_nats`**). It targets interop with `turbocable-server` as documented in
 > [`docs/nats-jetstream.md`](../nats-jetstream.md),
 > [`docs/websocket-protocol.md`](../websocket-protocol.md), and
@@ -302,7 +302,7 @@ the contract that matters to end users.
 - Released to RubyGems.org as `turbocable_nats`.
 - Semver. Gem versions stay decoupled from server versions but the README
   documents the minimum compatible server version.
-- Source of truth: GitHub repo `samaswin/turbocable`, CI via GitHub Actions
+- Source of truth: GitHub repo `samaswin/turbocable_nats`, CI via GitHub Actions
   (Ruby 3.1 / 3.2 / 3.3 matrix).
 - `CHANGELOG.md` kept in Keep-a-Changelog format.
 
