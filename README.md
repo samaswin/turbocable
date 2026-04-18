@@ -27,15 +27,15 @@ gem install turbocable_nats -v 1.0.2
 
 Your Ruby process publishes to NATS JetStream on `TURBOCABLE.*`; [turbocable-server](https://github.com/samaswin/turbocable-server) subscribes as a JetStream consumer and fans messages out to WebSocket clients. The gem connects to **NATS only** (TCP `:4222`), not to the gateway.
 
-![TurboCable architecture: Ruby backend, NATS JetStream, turbocable-server, WebSocket clients](docs/turbocable-architecture.svg)
-
-Source file: [docs/turbocable-architecture.svg](docs/turbocable-architecture.svg).
+<p align="center">
+  <img src="docs/turbocable-architecture.svg" alt="TurboCable architecture: Ruby backend, NATS JetStream, turbocable-server, WebSocket clients" width="100%" />
+</p>
 
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
-| [Architecture diagram](docs/turbocable-architecture.svg) | SVG overview: backend → NATS → [turbocable-server](https://github.com/samaswin/turbocable-server) → clients |
+| [Architecture](#architecture) | Diagram above: backend → NATS → [turbocable-server](https://github.com/samaswin/turbocable-server) → clients |
 | [Getting Started](docs/getting-started.md) | Installation, first broadcast, Rails integration |
 | [Configuration](docs/configuration.md) | All options, env vars, NATS auth modes |
 | [Codecs](docs/codecs.md) | JSON and MessagePack, ext types, tradeoffs |
