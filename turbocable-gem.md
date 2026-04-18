@@ -280,7 +280,7 @@ the contract that matters to end users.
    dependent gems (including `turbocable-rails`) can assert on broadcasts
    without a live NATS or server.
 3. **Integration tests (CI)** — spin up the full stack as Docker Compose
-   services: `nats:2.10 --jetstream`, `ghcr.io/samaswin/turbocable-server:latest`, and
+   services: `nats:2.10-alpine` (with `-js`), `ghcr.io/samaswin/turbocable-server:latest`, and
    the Ruby test runner. Each spec:
    - Mints a JWT via `Turbocable::Auth.issue_token`.
    - Publishes the public key via `Turbocable::Auth.publish_public_key!`.
@@ -358,7 +358,7 @@ A `docker-compose.yml` at the repo root starts:
 
 | Service | Image | Notes |
 |---------|-------|-------|
-| `nats` | `nats:2.10` | Started with `-js` |
+| `nats` | `nats:2.10-alpine` | Started with `-js` (Alpine variant for compose healthchecks) |
 | `turbocable-server` | `ghcr.io/samaswin/turbocable-server:latest` | Depends on `nats`, exposes `9292` |
 | `rspec` | Locally built Ruby image | Mounts the gem source, runs `bundle exec rspec` |
 

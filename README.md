@@ -68,7 +68,7 @@ Boot the server stack locally with `bin/dev` before running your application:
 
 ```sh
 ./bin/dev
-# → Starts nats:2.10 + ghcr.io/samaswin/turbocable-server:latest via Docker Compose
+# → Starts nats:2.10-alpine + ghcr.io/samaswin/turbocable-server:latest via Docker Compose
 # → Blocks until GET http://127.0.0.1:9292/health returns 200
 ```
 
@@ -202,7 +202,7 @@ Turbocable.healthcheck!
 
 ```sh
 curl http://turbocable-server:9292/health
-# => {"status":"ok","version":"0.5.0","connections":0,"nats_connected":true}
+# => {"status":"ok","version":"<turbocable-server build>","connections":0,"nats_connected":true}
 ```
 
 See [docs/operations.md](docs/operations.md) for a Kubernetes `livenessProbe` example combining both probes.

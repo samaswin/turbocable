@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Boots the reference topology (nats + turbocable-server) and blocks until
-# the gateway's /health endpoint returns 200. Stub only in Phase 0 — scripts
-# that depend on this live endpoint land in Phase 1.
+# the gateway's /health endpoint returns 200.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +21,7 @@ for arg in "$@"; do
 done
 
 if [[ "$FROM_SOURCE" -eq 1 ]]; then
-  echo "--server-from-source not yet wired up (Phase 1). Falling back to compose image." >&2
+  echo "--server-from-source not wired up yet. Falling back to compose image." >&2
 fi
 
 echo "→ Booting nats + turbocable-server via docker compose…"

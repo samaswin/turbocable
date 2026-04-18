@@ -27,7 +27,7 @@ The fastest way to get both is with Docker Compose (included in this repo):
 ```sh
 git clone https://github.com/samaswin/turbocable
 cd turbocable
-./bin/dev   # boots nats:2.10 + ghcr.io/samaswin/turbocable-server:latest
+./bin/dev   # boots nats:2.10-alpine + ghcr.io/samaswin/turbocable-server:latest
 ```
 
 `bin/dev` blocks until `GET http://127.0.0.1:9292/health` returns `200`, then keeps the stack running in the foreground. Press `Ctrl-C` to stop.
@@ -73,7 +73,7 @@ Confirm the server is healthy before broadcasting:
 
 ```sh
 curl http://localhost:9292/health
-# {"status":"ok","version":"0.5.0","connections":0,"nats_connected":true}
+# {"status":"ok","version":"<turbocable-server build>","connections":0,"nats_connected":true}
 ```
 
 ---

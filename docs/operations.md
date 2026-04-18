@@ -41,7 +41,7 @@ To check whether the gateway itself is healthy, hit its HTTP endpoint:
 
 ```sh
 curl http://turbocable-server:9292/health
-# {"status":"ok","version":"0.5.0","connections":12,"nats_connected":true}
+# {"status":"ok","version":"<turbocable-server build>","connections":12,"nats_connected":true}
 ```
 
 Fields returned by the server:

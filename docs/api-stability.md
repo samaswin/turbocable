@@ -1,8 +1,8 @@
 # API Stability
 
-This document defines the public API surface of `turbocable` and the compatibility promises made as of **1.0.0**.
+This document defines the public API surface of `turbocable` and the compatibility promises made for the **1.0.x** line (from **1.0.0** onward).
 
-The gem follows [Semantic Versioning](https://semver.org/). Once 1.0.0 is released:
+The gem follows [Semantic Versioning](https://semver.org/). Since 1.0.0:
 
 - **Patch releases** (1.0.x) — bug fixes only. No breaking changes.
 - **Minor releases** (1.x.0) — backward-compatible additions. New methods, new options, new codecs.
@@ -10,7 +10,7 @@ The gem follows [Semantic Versioning](https://semver.org/). Once 1.0.0 is releas
 
 ---
 
-## Public API (stable from 1.0.0)
+## Public API (stable for the 1.0.x line)
 
 The following are considered part of the public, stable interface. Do not use anything not listed here in production code — unlisted items may change without notice.
 

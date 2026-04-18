@@ -7,15 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- `Turbocable::Auth.publish_public_key!` auto-creates the JWT KV bucket again when
-  nats-pure raises `NATS::KeyValue::BucketNotFoundError` (in addition to the older
-  `JetStream::Error::NotFound` / `StreamNotFound` types).
-
 ---
 
-## [1.0.0] - 2026-04-15
+## [1.0.0] - 2026-04-18
 
 ### Added
 
@@ -29,6 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Trusted RubyGems publishing workflow (`.github/workflows/release.yml`) using OIDC —
     no long-lived API keys stored in repository secrets.
   - Version pinned to `1.0.0`; public API surface locked down in `docs/api-stability.md`.
+
+### Fixed
+
+- `Turbocable::Auth.publish_public_key!` auto-creates the JWT KV bucket when nats-pure
+  raises `NATS::KeyValue::BucketNotFoundError` (in addition to the older
+  `JetStream::Error::NotFound` / `StreamNotFound` types).
+
+### Changed
+
+- Documentation aligned with the reference compose stack (`nats:2.10-alpine`), generic
+  `turbocable-server` `/health` version examples, and API stability wording for the
+  1.0.x line. `bin/dev` header comments updated. Release workflow uses
+  `actions/checkout@v6`, matching CI.
 
 ---
 
